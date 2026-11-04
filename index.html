@@ -709,6 +709,7 @@ hr{border:0;border-top:1px solid var(--line-soft);margin:0;width:100%}
 #map{height:100%;width:100%;z-index:0;background:var(--surface-2);font-family:var(--body);color:var(--ink)}
 #map .mk{background:none;border:0;cursor:pointer}
 .legend img{object-fit:contain}
+input[data-k="cost"]{width:118px!important;min-width:118px;max-width:none!important}
 #map .mk svg{display:block}
 #map .mk .pinmk{display:block;width:20px!important;height:28px!important;filter:drop-shadow(0 1px 1px rgba(255,255,255,.9)) drop-shadow(0 1px 2px rgba(31,29,54,.35))}
 #map .site{background:none;border:0;cursor:grab}
@@ -939,7 +940,6 @@ footer{margin-top:24px}
         </ol>
         <p>The recommendation uses a combined score from market performance, supply headroom, transit access, activity centers, and land value. Each comparable is weighted 1 ÷ (1 + distance ÷ 800 m), so closer properties have more influence on price, occupancy, vacant space, NLA per room, and building size. Each sector's GFA follows the weighted median NLA of comparables within the radius, divided by efficiency, then limited by FAR and max floors. A sector with fewer than 3 comparables within the radius is not evaluated. This method does not yet measure how much new space the market can absorb, so the app shows a warning when occupancy is below 60% or vacant space is above 30%.</p>
         <p>Apartment project value uses strata sales. Hotel, office, and retail use net operating income divided by the cap rate. The model does not yet include timing, construction interest, or land acquisition cost.</p>
-        <p>Currency abbreviations: K = thousand, M = million, B = billion, T = trillion.</p>
       </div>
     </section>
   </div>
@@ -1046,8 +1046,7 @@ function analyze(inp,db=DB,As=A,Ws=W){
 /* ---------- Format ---------- */
 const nf=(v,d=0)=>Number(v).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
 const m2=v=>nf(v)+" m²";
-function rp(v){if(v==null||!isFinite(v))return "–";const n=v<0?"−":"",a=Math.abs(v);
-  if(a>=1e12)return n+"Rp "+nf(a/1e12,2)+" T";if(a>=1e9)return n+"Rp "+nf(a/1e9,a>=1e11?0:1)+" B";if(a>=1e6)return n+"Rp "+nf(a/1e6,a>=1e8?0:1)+" M";return n+"Rp "+nf(Math.round(a/1e3))+" K"}
+function rp(v){if(v==null||!isFinite(v))return "–";return (v<0?"−":"")+"Rp "+nf(Math.round(Math.abs(v)))}
 const pct=v=>nf(v*100)+"%";
 const stars=n=>n?`${n}-star`:"–";
 function starTable(comps){const g={};comps.forEach(p=>{if(!p.star)return;const x=g[p.star]=g[p.star]||{star:p.star,n:0,rooms:0,adr:0,occ:0};const w=p.rooms||1;x.n++;x.rooms+=p.rooms||0;x.adr+=p.price*w;x.occ+=p.occ*w;x.w=(x.w||0)+w});
@@ -1461,7 +1460,7 @@ function bindDownload(btn,get){if(!btn)return;const canSave=downloads||!window.c
 function bindDBDownloads(){bindDownload($("dlTemplate"),async()=>({filename:`template-${ds}.xlsx`,data:await buildExcel(false)}));bindDownload($("dlData"),async()=>({filename:`database-${ds}.xlsx`,data:await buildExcel(true)}))}
 
 /* ---------- Asumsi ---------- */
-const AF=[{k:"eff",l:"NLA/GFA efficiency",u:"%",m:100},{k:"cost",l:"Construction cost",u:"Rp million/m² GFA",m:1e-6},{k:"soft",l:"Soft costs",u:"% of construction",m:100},{k:"noi",l:"NOI margin",u:"% of revenue",m:100},{k:"cap",l:"Cap rate",u:"%",m:100},{k:"sales",l:"Sales realization",u:"% of price",m:100},{k:"profit",l:"Developer profit",u:"% of project value",m:100}];
+const AF=[{k:"eff",l:"NLA/GFA efficiency",u:"%",m:100},{k:"cost",l:"Construction cost",u:"Rp/m² GFA",m:1},{k:"soft",l:"Soft costs",u:"% of construction",m:100},{k:"noi",l:"NOI margin",u:"% of revenue",m:100},{k:"cap",l:"Cap rate",u:"%",m:100},{k:"sales",l:"Sales realization",u:"% of price",m:100},{k:"profit",l:"Developer profit",u:"% of project value",m:100}];
 function renderAssump(){
   $("asTable").innerHTML=`<thead><tr><th>Assumption</th>${SECT.map(s=>`<th class="r"><i class="sw" style="background:${SC[s]}"></i>${SN[s]}</th>`).join("")}</tr></thead><tbody>${AF.map(f=>`<tr><td>${f.l} <span class="hint">(${f.u})</span></td>${SECT.map(s=>A[s][f.k]==null?`<td class="r muted">–</td>`:`<td class="r"><input id="a-${s}-${f.k}" data-s="${s}" data-k="${f.k}" data-m="${f.m}" inputmode="decimal" aria-label="${f.l} ${SN[s]}" value="${+(A[s][f.k]*f.m).toFixed(2)}"></td>`).join("")}</tr>`).join("")}</tbody>`;
   $("weights").innerHTML=Object.keys(CN).map(k=>`<div class="field"><label for="w-${k}">${CN[k]}</label><input id="w-${k}" data-w="${k}" inputmode="numeric" value="${W[k]}"></div>`).join("");
